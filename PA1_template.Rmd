@@ -1,20 +1,102 @@
-# Reproducible Research: Peer Assessment 1
+Reproducible Research: Peer Assessment 1
+========================================================
+This assessment is for the course Reproducible Research by Johns Hopkins 
 
 
-## Loading and preprocessing the data
+## 1. Loading and preprocessing the data
+
+```{r echo =FALSE,  warning=FALSE, comment=FALSE, results=FALSE, include=FALSE}
+usePackage <- function(p) {
+if (!is.element(p, installed.packages()[,1]))
+        install.packages(p, dep = TRUE)
+    require(p, character.only = TRUE)
+}
+
+usePackage("RCurl")
+usePackage("ggplot2")
+```
+### 1.1 Load the data
+
+First step is to download data directly from URL and get an overall idea of data through summary function.
+```{r}
+file = getBinaryURL("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",
+                    ssl.verifypeer=FALSE)
+con = file("activity.zip", open = "wb")
+writeBin(file, con)
+close(con)
+unzip("activity.zip")
+activity = read.csv("activity.csv",sep=",")
+```
+### 1.2 Process/transform the data into a format suitable for your analysis
+Transform column date into date format.
+```{r}
+activity$date = as.Date(activity$date)
+head(activity)
+```
 
 
+## 2. What is mean total number of steps taken per day?
 
-## What is mean total number of steps taken per day?
+```{r}
+mean_steps_day = aggregate(activity$steps,by = list(activity$date),FUN = sum, na.rm = TRUE)
+head(mean_steps_day)
+```
+
+### 2.1 Make a histogram of the total number of steps taken each day
+
+```{r}
+colnames(mean_steps_day)[1] <- "date"
+colnames(mean_steps_day)[2] <- "steps"
+g = ggplot(mean_steps_day, aes(x = date))
+g + geom_histogram(aes(weight = steps), binwidth = 1, color = "black", fill="green") +
+  ggtitle("The total number of steps taken each day") + ylab("Steps")
+```
+### 2.2 Calculate and report the mean and median total number of steps taken per day
+
+Mean value is 
+```{r}
+mean(mean_steps_day$steps)
+```
+Median is
+```{r}
+median(mean_steps_day$steps)
+```
 
 
+## 3. What is the average daily activity pattern?
 
-## What is the average daily activity pattern?
+### 3.1 Make a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r}
+steps_data = aggregate(activity$steps,by = list(activity$interval),FUN = mean, na.rm = TRUE)
+plot(steps_data, type = "l", xlab = "Interval", ylab = "Steps")
+```
+
+### 3.2 Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+steps_data$Group.1[which.max(steps_data$x)]
+```
+
+## 4. Imputing missing values
+
+Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
 
 
+### 4.1 Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
-## Imputing missing values
+```{r}
+sum(is.na(activity$steps))
+```
+### 4.2 Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+### 4.3 Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+### 4.4 Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 
+## 5. Are there differences in activity patterns between weekdays and weekends?
 
-## Are there differences in activity patterns between weekdays and weekends?
+### 5.1 Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day
+
+### 5.2 Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). The plot should look something like the following, which was creating using simulated data:
