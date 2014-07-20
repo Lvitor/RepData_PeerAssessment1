@@ -2,7 +2,6 @@ Reproducible Research: Peer Assessment 1
 ========================================================
 This assessment is for the course Reproducible Research by Johns Hopkins 
 
-
 ## 1. Loading and preprocessing the data
 
 ```{r echo =FALSE,  warning=FALSE, comment=FALSE, results=FALSE, include=FALSE}
@@ -11,7 +10,6 @@ if (!is.element(p, installed.packages()[,1]))
         install.packages(p, dep = TRUE)
     require(p, character.only = TRUE)
 }
-
 usePackage("RCurl")
 usePackage("ggplot2")
 ```
@@ -33,7 +31,6 @@ Transform column date into date format.
 activity$date = as.Date(activity$date)
 head(activity)
 ```
-
 
 ## 2. What is mean total number of steps taken per day?
 
@@ -61,8 +58,6 @@ Median is
 ```{r}
 median(mean_steps_day$steps)
 ```
-
-
 ## 3. What is the average daily activity pattern?
 
 ### 3.1 Make a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
@@ -90,13 +85,57 @@ sum(is.na(activity$steps))
 ```
 ### 4.2 Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
+
+```{r}
+round(mean(activity$steps, na.rm=TRUE),0)
+round(median(activity$steps, na.rm=TRUE),0)
+```
+As we see, the mean and median has a huge difference. We will use
+mean for this anaylisy.
+
 ### 4.3 Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
+```{r}
+activity_withoutNAs = activity
+activity_withoutNAs$steps[is.na(activity_withoutNAs$steps)] = round(mean(activity$steps, na.rm=TRUE),0)
+```
 ### 4.4 Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
+```{r}
+mean_steps_day_without_NAs = aggregate(activity_withoutNAs$steps,by = list(activity_withoutNAs$date),FUN = sum, na.rm = TRUE)
+head(mean_steps_day_without_NAs)
+colnames(mean_steps_day_without_NAs)[1] <- "date"
+colnames(mean_steps_day_without_NAs)[2] <- "steps"
+g = ggplot(mean_steps_day_without_NAs, aes(x = date))
+g + geom_histogram(aes(weight = steps), binwidth = 1, color = "black", fill="green") +
+  ggtitle("The total number of steps taken each day") + ylab("Steps")
+mean(mean_steps_day_without_NAs$steps)
+median(mean_steps_day_without_NAs$steps)
+```
+
+The missing values drift mean and median value to below what are actually mean and median.
 
 ## 5. Are there differences in activity patterns between weekdays and weekends?
 
 ### 5.1 Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day
 
-### 5.2 Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). The plot should look something like the following, which was creating using simulated data:
+```{r}
+Sys.setlocale("LC_TIME", "us")
+activity_withoutNAs$weekday = weekdays(activity_withoutNAs$date)
+
+for(i in 1:nrow(activity_withoutNAs)){
+  if(activity_withoutNAs$weekday[i]=="Saturday" || activity_withoutNAs$weekday[i]=="Sunday"){
+    activity_withoutNAs$day_type[i]="weekend"
+  }else{activity_withoutNAs$day_type[i]="weekday"}
+}
+```
+
+### 5.2 Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). The plot should look something like the following, which was creating using simulated data:
+
+```{r}
+five_min_average = aggregate(activity_withoutNAs$steps,by = list(activity_withoutNAs$interval,activity_withoutNAs$day_type ),FUN = mean, na.rm = TRUE)
+colnames(five_min_average)[1] = "interval"
+colnames(five_min_average)[2] = "day_type"
+colnames(five_min_average)[3] = "steps"
+qplot(interval, steps, data=five_min_average, facets = day_type ~ ., geom="line")+ggtitle( "Average number of step")
+```
